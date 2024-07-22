@@ -14,8 +14,8 @@ const (
 	JapaneseToEnglish = "Japanese to English"
 )
 
-var rxEtoJ = regexp.MustCompile(`(?i:e.*to.*j)`)
-var rxJtoE = regexp.MustCompile(`(?i:j.*to.*e)`)
+var rxEtoJ = regexp.MustCompile(`(?i:e.*(?:to|2).*j)`)
+var rxJtoE = regexp.MustCompile(`(?i:j.*(?:to|2).*e)`)
 
 func regulateMode(mode string, content string) (string, error) {
 	if strings.EqualFold(mode, EnglishToJapanese) || rxEtoJ.MatchString(mode) {
@@ -38,7 +38,8 @@ func regulateMode(mode string, content string) (string, error) {
 		}
 	}
 
-	if ascii < total/4 {
+	//log.Printf("ascii=%d total=%d\n", ascii, total)
+	if ascii < 3*total/4 {
 		return JapaneseToEnglish, nil
 	}
 	return EnglishToJapanese, nil
