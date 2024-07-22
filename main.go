@@ -88,14 +88,16 @@ type Response struct {
 
 func main() {
 	var (
-		verbose bool
-		mode    string
-		param   PromptParam
-		req     Request
-		res     Response
+		verbose    bool
+		entrypoint string
+		mode       string
+		param      PromptParam
+		req        Request
+		res        Response
 	)
 
 	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
+	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
 	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
 	flag.IntVar(&req.NPredict, "n_predict", -1, `number of predict`)
 	flag.Float64Var(&req.RepeatPenalty, "repeat_penalty", 1.0, `repeat penalty`)
@@ -127,7 +129,7 @@ func main() {
 	}
 
 	req.Prompt = prompt
-	err = jsonhttpc.Do(context.Background(), "POST", "http://127.0.0.1:8080/completions", &req, &res)
+	err = jsonhttpc.Do(context.Background(), "POST", entrypoint, &req, &res)
 	if err != nil {
 		log.Fatalf("failed to request: %s", err)
 	}
