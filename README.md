@@ -22,6 +22,8 @@
     $ go install github.com/koron/c3tr-client@latest
     ```
 
+    もしくはリリースページから[ビルド済みバイナリ](https://github.com/koron/c3tr-client/releases/latest)をダウンロードしてもよい。
+
 4. (OPTIONAL) Setup environment variables
 
     CUDA用とllama-server用の環境変数を設定する。
