@@ -26,7 +26,7 @@ type Response struct {
 		DynatempExponent       float64       `json:"dynatemp_exponent"`
 		DynatempRange          float64       `json:"dynatemp_range"`
 		FrequencyPenalty       float64       `json:"frequency_penalty"`
-		Grammer                string        `json:"grammer"`
+		Grammar                string        `json:"grammar"`
 		IgnoreEOS              bool          `json:"ignore_eos"`
 		LogitBias              []interface{} `json:"logit_bias"`
 		MinKeep                float64       `json:"min_keep"`
