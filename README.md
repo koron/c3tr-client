@@ -45,6 +45,8 @@
     llama-server --log-disable -m D:\var\llamacpp\C3TR-Adapter-Q4_k_m.gguf -ngl 43
     ```
 
+    ローカル `127.0.0.1:8080` で Open AI の互換APIが動き出す。
+
 5. c3tr-client を使って翻訳する
 
     ```console
@@ -54,3 +56,5 @@
     $ c3tr-client "llama.cpp上で動作するC3TRエージェントの日本語-英語と英語-日本語の翻訳クライアント"
     A Japanese-English and English-Japanese translation client for the C3TR agent that runs on llama.cpp
     ```
+
+    c3tr-client は 4 で開始した Open AI の互換APIにアクセスして翻訳をする。
