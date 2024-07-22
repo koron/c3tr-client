@@ -12,6 +12,12 @@
 
     Windows + CUDA の場合は `llama-b{数字}-win-cuda-cu{CUDAのバージョン}-x64.zip` の何れかをダウンロードして展開する。
 
+    CPUだけで頑張りたい場合は `llama-b{数字}-bin-win-avx2-x64.zip` をダウンロードして展開する。
+
+    macos は `llama-b3438-bin-macos-arm64.zip` をダウンロードして展開する。
+
+    LinuxでUbuntuはコンパイル済みバイナリがあるが、それ以外の場合は自分でコンパイルする必要があるだろう。
+
 2. Download [C3TR-Adapter\_gguf](https://huggingface.co/webbigdata/C3TR-Adapter_gguf/tree/main)
 
     `C3TR-Adapter-Q4_k_m.gguf` もしくは `C3TR-Adapter.f16.Q4_k_m.gguf` あたりがオススメ。
@@ -28,7 +34,7 @@
 
     CUDA用とllama-server用の環境変数を設定する。
 
-    以下は筆者の設定例:
+    以下は筆者の Windows 11 + CUDA 12 の設定例:
 
     ```bat
     SET "CUDA_PATH=D:\App\NVIDIA GPU Computing Toolkit\CUDA\v12.2"
@@ -58,3 +64,21 @@
     ```
 
     c3tr-client は 4 で開始した Open AI の互換APIにアクセスして翻訳をする。
+
+## Options
+
+* `-verbose` デバッグ用のメッセージを表示する
+* `-entrypoint {URL}` 翻訳APIのエントリーポイントを指定する。
+
+    特に指定しなければ `http://127.0.0.1:8080/completions` で、ローカルで動いている llama.cpp を利用する。
+
+* `-mode {MODE}` 日英・英日の翻訳モードを指定する。
+
+    特に指定しない場合は自動判定で、翻訳対象の文中に英数字の文字数が75%を越えたら英→日の翻訳となり、そうでなければ日→英の翻訳となる。
+    明示的に指定する場合は `e2j` もしくは `EtoJ` で英→日翻訳、`j2e` もしくは `JtoE` で英→日翻訳になる。
+    大文字小文字の区別はしない。
+
+* `-writingstyle {WRITING_STYLE}` 訳出文のスタイルを指定する。
+
+    デフォルトは `educational-casual` 。
+    ドキュメントにはその他に `web-fiction`, `formal`, `slang`, `casual`, `nsfw` などの指定が見られた。

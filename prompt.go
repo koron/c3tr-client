@@ -46,7 +46,12 @@ func regulateMode(mode string, content string) (string, error) {
 }
 
 const (
-	EducationCasual = "education-casual"
+	EducationalCasual = "educational-casual"
+	WebFiction        = "web-fiction"
+	Formal            = "formal"
+	Slang             = "slang"
+	Casual            = "casual"
+	NSFW              = "nsfw"
 )
 
 type PromptParam struct {

@@ -99,6 +99,8 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
 	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
 	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
+	flag.StringVar(&param.WritingStyle, "writingstyle", EducationalCasual, `writing style`)
+
 	flag.IntVar(&req.NPredict, "n_predict", -1, `number of predict`)
 	flag.Float64Var(&req.RepeatPenalty, "repeat_penalty", 1.0, `repeat penalty`)
 	flag.Float64Var(&req.Temperature, "temperature", 0.0, `temperature`)
@@ -116,7 +118,6 @@ func main() {
 	}
 
 	param.Mode = mode
-	param.WritingStyle = EducationCasual
 	param.Content = content
 	prompt, err := param.Generate()
 	if err != nil {
