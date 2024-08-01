@@ -45,13 +45,20 @@ func regulateMode(mode string, content string) (string, error) {
 	return EnglishToJapanese, nil
 }
 
+// Available styles.
+// See also https://huggingface.co/webbigdata/C3TR-Adapter/discussions/1#669e6ef419d0f96d8a77128b
 const (
-	EducationalCasual = "educational-casual"
-	WebFiction        = "web-fiction"
-	Formal            = "formal"
-	Slang             = "slang"
-	Casual            = "casual"
-	NSFW              = "nsfw"
+	Casual               = "casual"
+	Formal               = "formal"
+	Technical            = "technical"
+	Journalistic         = "journalistic"
+	WebFiction           = "web-fiction"
+	Business             = "business"
+	NSFW                 = "nsfw"
+	EducationalCasual    = "educational-casual"
+	AcademicPresentation = "academic-presentation"
+	Slang                = "slang"
+	SNSCasual            = "sns-casual"
 )
 
 type PromptParam struct {
