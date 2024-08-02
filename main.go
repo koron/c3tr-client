@@ -99,7 +99,7 @@ func main() {
 	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
 	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
 	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
-	flag.StringVar(&param.WritingStyle, "writingstyle", EducationalCasual, `writing style`)
+	flag.StringVar(&param.WritingStyle, "writingstyle", Technical, `writing style`)
 
 	flag.IntVar(&req.NPredict, "n_predict", -1, `number of predict`)
 	flag.Float64Var(&req.RepeatPenalty, "repeat_penalty", 1.0, `repeat penalty`)
@@ -115,6 +115,10 @@ func main() {
 	mode, err := regulateMode(mode, content)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if !IsValidWritingStyles(param.WritingStyle) {
+		log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
+			param.WritingStyle, strings.Join(ValidWritingStyles, ", "))
 	}
 
 	param.Mode = mode

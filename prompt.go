@@ -61,6 +61,29 @@ const (
 	SNSCasual            = "sns-casual"
 )
 
+var ValidWritingStyles = []string{
+	Casual,
+	Formal,
+	Technical,
+	Journalistic,
+	WebFiction,
+	Business,
+	NSFW,
+	EducationalCasual,
+	AcademicPresentation,
+	Slang,
+	SNSCasual,
+}
+
+func IsValidWritingStyles(s string) bool {
+	for _, valid := range ValidWritingStyles {
+		if s == valid {
+			return true
+		}
+	}
+	return false
+}
+
 type PromptParam struct {
 	Mode         string
 	WritingStyle string

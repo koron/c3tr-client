@@ -80,5 +80,9 @@
 
 * `-writingstyle {WRITING_STYLE}` 訳出文のスタイルを指定する。
 
-    デフォルトは `educational-casual` 。
-    ドキュメントにはその他に `web-fiction`, `formal`, `slang`, `casual`, `nsfw` などの指定が見られた。
+    デフォルトは `technical` 。
+    有効な値は次の11通り:
+    `casual`, `formal`, `technical`, `journalistic`, `web-fiction`, `business`,
+    `nsfw`, `educational-casual`, `academic-presentation`, `slang`,
+    `sns-casual`
+    ([出展](https://huggingface.co/webbigdata/C3TR-Adapter/discussions/1#669e6ef419d0f96d8a77128b))
