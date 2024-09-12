@@ -1,10 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/koron-go/jsonhttpc"
@@ -131,12 +133,14 @@ func reverseMode(mode string) string {
 
 func main() {
 	var (
-		iteration int
-		mode      string
-		wstyle    string
+		continuouse bool
+		iteration   int
+		mode        string
+		wstyle      string
 	)
 
 	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
+	flag.BoolVar(&continuouse, "continuouse", false, `continuouse translation`)
 	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
 	flag.IntVar(&iteration, "iteration", 0, "number of times to repeat the reverse translation. -1 means to repeat until the translation matches the translation history.")
 	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
@@ -148,8 +152,30 @@ func main() {
 	flag.Float64Var(&reqTmpl.TopP, "top_p", 0.0, `top P`)
 	flag.Parse()
 
-	if flag.NArg() < 1 {
+	if flag.NArg() < 1 && !continuouse {
 		log.Fatal("no text to translate")
+	}
+
+	// Continuouse translation.
+	if continuouse {
+		for {
+			sc := bufio.NewScanner(os.Stdin)
+			sc.Scan()
+			text := sc.Text()
+			mode, err := regulateMode(mode, text)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if !IsValidWritingStyles(wstyle) {
+				log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
+					wstyle, strings.Join(ValidWritingStyles, ", "))
+			}
+			translation, err := translate(text, mode, wstyle, nil)
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println(translation)
+		}
 	}
 
 	text := strings.TrimSpace(flag.Arg(0))
