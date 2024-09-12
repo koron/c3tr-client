@@ -14,7 +14,7 @@
 
     CPUだけで頑張りたい場合は `llama-b{数字}-bin-win-avx2-x64.zip` をダウンロードして展開する。
 
-    macos は `llama-b3438-bin-macos-arm64.zip` をダウンロードして展開する。
+    macos は `llama-b{数字}-bin-macos-arm64.zip` をダウンロードして展開する。
 
     LinuxでUbuntuはコンパイル済みバイナリがあるが、それ以外の場合は自分でコンパイルする必要があるだろう。
 
@@ -86,3 +86,9 @@
     `nsfw`, `educational-casual`, `academic-presentation`, `slang`,
     `sns-casual`
     ([出展](https://huggingface.co/webbigdata/C3TR-Adapter/discussions/1#669e6ef419d0f96d8a77128b))
+
+* `-iteration {count}` 反復翻訳回数を指定する。反復のたびに翻訳モードは逆転する。
+
+    デフォルトは0で、1回限りの翻訳をする。
+    1以上を指定した場合、その回数、翻訳を反復する。
+    -1を指定した場合、翻訳文の履歴に一致する文章が訳出されるまで、反復翻訳を繰り返す。
