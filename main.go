@@ -86,46 +86,21 @@ type Response struct {
 	Truncated bool `json:"truncated"`
 }
 
-func main() {
-	var (
-		verbose    bool
-		entrypoint string
-		mode       string
-		param      PromptParam
-		req        Request
-		res        Response
-	)
+var (
+	verbose    bool
+	entrypoint string
+	reqTmpl    Request
+)
 
-	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
-	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
-	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
-	flag.StringVar(&param.WritingStyle, "writingstyle", Technical, `writing style`)
-
-	flag.IntVar(&req.NPredict, "n_predict", -1, `number of predict`)
-	flag.Float64Var(&req.RepeatPenalty, "repeat_penalty", 1.0, `repeat penalty`)
-	flag.Float64Var(&req.Temperature, "temperature", 0.0, `temperature`)
-	flag.Float64Var(&req.TopP, "top_p", 0.0, `top P`)
-	flag.Parse()
-
-	if flag.NArg() < 1 {
-		log.Fatal("no prompts to translate")
+func translate(text string, mode string, writingStyle string, subStyles map[string]string) (string, error) {
+	param := PromptParam{
+		Mode:         mode,
+		WritingStyle: writingStyle,
+		Content:      text,
 	}
-
-	content := strings.TrimSpace(flag.Arg(0))
-	mode, err := regulateMode(mode, content)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if !IsValidWritingStyles(param.WritingStyle) {
-		log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
-			param.WritingStyle, strings.Join(ValidWritingStyles, ", "))
-	}
-
-	param.Mode = mode
-	param.Content = content
 	prompt, err := param.Generate()
 	if err != nil {
-		log.Fatalf("failed to generate prompt: %s", err)
+		return "", fmt.Errorf("failed to generate prompt: %w", err)
 	}
 
 	if verbose {
@@ -133,11 +108,97 @@ func main() {
 		log.Printf("prompt is... %q", prompt)
 	}
 
+	req := reqTmpl
 	req.Prompt = prompt
+	var res Response
 	err = jsonhttpc.Do(context.Background(), "POST", entrypoint, &req, &res)
 	if err != nil {
-		log.Fatalf("failed to request: %s", err)
+		return "", fmt.Errorf("failed to request: %w", err)
+	}
+	return res.Content, nil
+}
+
+func reverseMode(mode string) string {
+	switch mode {
+	case EnglishToJapanese:
+		return JapaneseToEnglish
+	case JapaneseToEnglish:
+		return EnglishToJapanese
+	default:
+		return EnglishToJapanese
+	}
+}
+
+func main() {
+	var (
+		iteration int
+		mode      string
+		wstyle    string
+	)
+
+	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
+	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
+	flag.IntVar(&iteration, "iteration", 0, "number of times to repeat the reverse translation. -1 means to repeat until the translation matches the translation history.")
+	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
+	flag.StringVar(&wstyle, "writingstyle", Technical, `writing style`)
+
+	flag.IntVar(&reqTmpl.NPredict, "n_predict", -1, `number of predict`)
+	flag.Float64Var(&reqTmpl.RepeatPenalty, "repeat_penalty", 1.0, `repeat penalty`)
+	flag.Float64Var(&reqTmpl.Temperature, "temperature", 0.0, `temperature`)
+	flag.Float64Var(&reqTmpl.TopP, "top_p", 0.0, `top P`)
+	flag.Parse()
+
+	if flag.NArg() < 1 {
+		log.Fatal("no text to translate")
 	}
 
-	fmt.Println(res.Content)
+	text := strings.TrimSpace(flag.Arg(0))
+	mode, err := regulateMode(mode, text)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if !IsValidWritingStyles(wstyle) {
+		log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
+			wstyle, strings.Join(ValidWritingStyles, ", "))
+	}
+
+	// One-shot translation.
+	if iteration == 0 {
+		translation, err := translate(text, mode, wstyle, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(translation)
+		return
+	}
+
+	// Repeat the translation with specifying the number of times.
+	if iteration > 0 {
+		for i := range iteration + 1 {
+			translation, err := translate(text, mode, wstyle, nil)
+			if err != nil {
+				log.Fatalf("failed at #%d: %s", i, err)
+			}
+			fmt.Printf("#%d\t%s\n", i, translation)
+			text = translation
+			mode = reverseMode(mode)
+		}
+		return
+	}
+
+	// Repeat the translation until the same result is obtained.
+	seen := map[string]struct{}{}
+	for i := 0; ; i++ {
+		if _, ok := seen[text]; ok {
+			break
+		}
+		seen[text] = struct{}{}
+		translation, err := translate(text, mode, wstyle, nil)
+		if err != nil {
+			log.Fatalf("failed at #%d: %s", i, err)
+		}
+		fmt.Printf("#%d\t%s\n", i, translation)
+		text = translation
+		mode = reverseMode(mode)
+	}
 }
