@@ -65,6 +65,40 @@
 
     c3tr-client は 4 で開始した Open AI の互換APIにアクセスして翻訳をする。
 
+## Usage
+
+1. 引数に翻訳する文を指定する
+
+    ```console
+    $ c3tr-client '引数に翻訳する文を指定する'
+    Specify the sentence to translate in the argument
+    ```
+
+2. 引数を指定せずに起動すると、インタラクティブに翻訳する
+
+    ```console
+    $ c3tr-client
+    c3tr> 引数に翻訳する文を指定する
+    Specify the sentence to translate in the argument
+    c3tr> 引数を指定せずに起動すると、インタラクティブに翻訳する
+    When launched without arguments, it translates interactively.
+    c3tr>
+    ```
+
+    インタラクティブモードは `<CTRL+D>` で終了できる。
+
+    このモードではいくつかのショートカットで履歴にアクセスできる。
+    ショートカットの詳細は [peterh/liner](https://github.com/peterh/liner/blob/v1.2.2/README.md#line-editing) を参照のこと。
+
+    パイプやリダイレクトを付けて起動した場合は、インタラクティブモードでは起動できずエラーになる。
+
+    ```console
+    $ c3tr-client > /dev/null
+    2024/09/13 12:48:24 no text to translate. for enabling interactive mode, do not use pipes nor redirects
+    ```
+
+    `-iteration` オプションはインタラクティブモードでは作用しない。
+
 ## Options
 
 * `-verbose` デバッグ用のメッセージを表示する
