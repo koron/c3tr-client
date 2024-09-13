@@ -1,15 +1,18 @@
 package main
 
 import (
-	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/koron-go/jsonhttpc"
+	"github.com/mattn/go-isatty"
+	"github.com/peterh/liner"
 )
 
 type Request struct {
@@ -91,7 +94,8 @@ type Response struct {
 var (
 	verbose    bool
 	entrypoint string
-	reqTmpl    Request
+
+	reqTmpl Request
 )
 
 func translate(text string, mode string, writingStyle string, subStyles map[string]string) (string, error) {
@@ -131,85 +135,94 @@ func reverseMode(mode string) string {
 	}
 }
 
+func isTerminal(fd uintptr) bool {
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
+func canBeInteractive() bool {
+	return isTerminal(os.Stdin.Fd()) && isTerminal(os.Stdout.Fd())
+}
+
 func main() {
 	var (
-		continuouse bool
-		iteration   int
-		mode        string
-		wstyle      string
+		modeOpt   string
+		wstyleOpt string
+		iteration int
 	)
 
+	// Core options.
 	flag.BoolVar(&verbose, "verbose", false, `verbose messages`)
-	flag.BoolVar(&continuouse, "continuouse", false, `continuouse translation`)
 	flag.StringVar(&entrypoint, "entrypoint", "http://127.0.0.1:8080/completions", `entrypoint`)
-	flag.IntVar(&iteration, "iteration", 0, "number of times to repeat the reverse translation. -1 means to repeat until the translation matches the translation history.")
-	flag.StringVar(&mode, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
-	flag.StringVar(&wstyle, "writingstyle", Technical, `writing style`)
+	flag.StringVar(&modeOpt, "mode", "", `translation mode: EtoJ, JtoE or auto (default)`)
+	flag.StringVar(&wstyleOpt, "writingstyle", Technical, `writing style`)
 
+	// Request options.
 	flag.IntVar(&reqTmpl.NPredict, "n_predict", -1, `number of predict`)
 	flag.Float64Var(&reqTmpl.RepeatPenalty, "repeat_penalty", 1.0, `repeat penalty`)
 	flag.Float64Var(&reqTmpl.Temperature, "temperature", 0.0, `temperature`)
 	flag.Float64Var(&reqTmpl.TopP, "top_p", 0.0, `top P`)
+
+	// Operation mode options.
+	flag.IntVar(&iteration, "iteration", 0, "number of times to repeat the reverse translation. -1 means to repeat until the translation matches the translation history.")
+
 	flag.Parse()
 
-	if flag.NArg() < 1 && !continuouse {
-		log.Fatal("no text to translate")
+	// Validate option values.
+	if !IsValidWritingStyles(wstyleOpt) {
+		log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
+			wstyleOpt, strings.Join(ValidWritingStyles, ", "))
 	}
 
-	// Continuouse translation.
-	if continuouse {
-		for {
-			sc := bufio.NewScanner(os.Stdin)
-			sc.Scan()
-			text := sc.Text()
-			mode, err := regulateMode(mode, text)
-			if err != nil {
-				log.Fatal(err)
-			}
-			if !IsValidWritingStyles(wstyle) {
-				log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
-					wstyle, strings.Join(ValidWritingStyles, ", "))
-			}
-			translation, err := translate(text, mode, wstyle, nil)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println(translation)
+	// Start interative translation mode, if without any arguments and the
+	// os.Stdin and os.Stdout are connected a TTY.
+	if flag.NArg() == 0 {
+		if !canBeInteractive() {
+			log.Fatal("no text to translate. for enabling interactive mode, do not use pipes nor redirects")
 		}
+		err := interactiveMode(modeOpt, wstyleOpt, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
 	}
 
-	text := strings.TrimSpace(flag.Arg(0))
-	mode, err := regulateMode(mode, text)
+	err := singleSentenceMode(flag.Arg(0), modeOpt, wstyleOpt, nil, iteration)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if !IsValidWritingStyles(wstyle) {
-		log.Fatalf("unknown %q writingstyle. please choose one from following: %s",
-			wstyle, strings.Join(ValidWritingStyles, ", "))
+}
+
+// Operation mode implementations
+
+func singleSentenceMode(textOrig, modeOrig, wstyle string, subStyles map[string]string, iteration int) error {
+	text := strings.TrimSpace(textOrig)
+	mode, err := regulateMode(modeOrig, text)
+	if err != nil {
+		return err
 	}
 
 	// One-shot translation.
 	if iteration == 0 {
-		translation, err := translate(text, mode, wstyle, nil)
+		translation, err := translate(text, mode, wstyle, subStyles)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		fmt.Println(translation)
-		return
+		return nil
 	}
 
 	// Repeat the translation with specifying the number of times.
 	if iteration > 0 {
 		for i := range iteration + 1 {
-			translation, err := translate(text, mode, wstyle, nil)
+			translation, err := translate(text, mode, wstyle, subStyles)
 			if err != nil {
-				log.Fatalf("failed at #%d: %s", i, err)
+				return fmt.Errorf("failed at #%d: %w", i, err)
 			}
 			fmt.Printf("#%d\t%s\n", i, translation)
 			text = translation
 			mode = reverseMode(mode)
 		}
-		return
+		return nil
 	}
 
 	// Repeat the translation until the same result is obtained.
@@ -219,12 +232,38 @@ func main() {
 			break
 		}
 		seen[text] = struct{}{}
-		translation, err := translate(text, mode, wstyle, nil)
+		translation, err := translate(text, mode, wstyle, subStyles)
 		if err != nil {
 			log.Fatalf("failed at #%d: %s", i, err)
 		}
 		fmt.Printf("#%d\t%s\n", i, translation)
 		text = translation
 		mode = reverseMode(mode)
+	}
+	return nil
+}
+
+func interactiveMode(modeOrig, writingStyle string, subStyles map[string]string) error {
+	state := liner.NewLiner()
+	defer state.Close()
+	for {
+		line, err := state.Prompt("c3tr> ")
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				return nil
+			}
+			return err
+		}
+		text := strings.TrimSpace(line)
+		mode, err := regulateMode(modeOrig, text)
+		if err != nil {
+			return err
+		}
+		translation, err := translate(text, mode, writingStyle, nil)
+		if err != nil {
+			return err
+		}
+		fmt.Println(translation)
+		state.AppendHistory(text)
 	}
 }
