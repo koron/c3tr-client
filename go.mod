@@ -4,7 +4,7 @@ go 1.23.11
 
 require (
 	github.com/koron-go/jsonhttpc v0.9.2
-	github.com/mattn/go-isatty v0.0.22
+	github.com/mattn/go-isatty v0.0.24
 	github.com/peterh/liner v1.2.2
 )
 
